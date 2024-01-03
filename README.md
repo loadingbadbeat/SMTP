@@ -53,3 +53,28 @@ In this case, the message from "user@sender.example" may be signed, but the veri
 Fortunately, there is DMARC, which stands for "Domain-based Message Authentication, Reporting and Conformance". DMARC introduces so-called "identifier alignment" for SPF and DKIM and allows senders to specify alignment policies for both methods. It verifies if the email's "From" domain aligns with SPF checks and/or DKIM signatures. Thus, the DMARC check fails if there is a mismatch between the MAIL FROM and the From domain where otherwise the SPF check would pass. An example for a DMARC policy, which is always located in a TXT record at _dmarc.[domain], can be seen here: 
 
 <b>v=DMARC1; p=reject; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf</b>
+
+
+The policy (p=) tells the receiving server to reject 100 percent (pct=) of the messages that fail the DMARC check. Therefore, the message will get accepted (only) if a valid SPF record and/or DKIM signature is provided. 
+
+However, what happens if there is no DMARC record? In general, e-mail authenticity handling heavily depends on the inbound SMTP server's configuration and software. As a rule of thumb, if there is SPF or DKIM alignment, there is a good chance of the e-mail being accepted! 
+
+
+<b>SMTP Smuggling?</b>
+
+With HTTP request smuggling, we're basically trying to exploit different interpretations of the same thing. For example, with discrepancies in the interpretation and processing of the "Content-Length" and "Transfer-Encoding" HTTP headers, an arbitrary HTTP request can be smuggled to an otherwise unreachable back-end server like in figure 6. 
+![image](https://github.com/loadingbadbeat/SMTP/assets/45952458/d0f8b722-5b63-441c-b97a-58fd0a22680b)
+
+
+In this example, the vulnerable front-end server only sees one HTTP POST request, while the back-end server sees a POST request and a GET request to /admin! 
+
+With SMTP, we also have a setup with two servers, being outbound and inbound SMTP servers. So, let's take a look at an SMTP session again in figure 7. 
+
+![image](https://github.com/loadingbadbeat/SMTP/assets/45952458/2bf9b6f2-fbbc-46a9-83e6-36d91443f213)
+
+Now tell me, what happens if outbound and inbound SMTP servers interpret the end-of-data sequence (<CR><LF>.<CR><LF>) differently? 
+
+Exactly, SMTP smuggling! 
+
+If SMTP servers have a different understanding of where the message data ends, an attacker can potentially break out of the message data. Even worse, this may allow to specify arbitrary SMTP commands and even to send separate e-mails (see figure 8)! 
+
